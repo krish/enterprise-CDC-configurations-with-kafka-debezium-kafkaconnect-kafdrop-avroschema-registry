@@ -1,0 +1,33 @@
+version: '3.3'
+services:
+  # Kafdrop
+  kafdrop:
+    image: obsidiandynamics/kafdrop
+    restart: 'no'
+    environment:
+      KAFKA_BROKERCONNECT: b-1.cdcclustermsk.7vyu01.c2.kafka.ap-southeast-1.amazonaws.com:9092,b-2.cdcclustermsk.7vyu01.c2.kafka.ap-southeast-1.amazonaws.com:9092
+    ports:
+      - 9000:9000
+
+  # Debezium Connector
+  kconnect:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8083:8083
+    environment:
+      CONFIG_STORAGE_TOPIC: cdc_connect_configs
+      OFFSET_STORAGE_TOPIC: cdc_connect_offsets
+      STATUS_STORAGE_TOPIC: cdc_connect_status
+      BOOTSTRAP_SERVERS: b-1.cdcclustermsk.7vyu01.c2.kafka.ap-southeast-1.amazonaws.com:9092,b-2.cdcclustermsk.7vyu01.c2.kafka.ap-southeast-1.amazonaws.com:9092
+
+  # Kafka Connect UI
+  kafka-connect-ui:
+    image: landoop/kafka-connect-ui
+    environment:
+      CONNECT_URL: http://kconnect:8083 # Pointing to the Kafka Connect REST API
+    ports:
+      - 8000:8000
+    depends_on:
+      - kconnect
